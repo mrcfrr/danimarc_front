@@ -70,8 +70,8 @@
             },
 
             fileUrl(item){
-                const encodedPath = encodeURIComponent(item.path);
-                return `http://127.0.0.1:8000/api/documents${encodedPath}`;
+                const decodedPath = decodeURIComponent(item.path);
+                return `http://127.0.0.1:8000/api/documents${decodedPath}`;
             },
 
             viewFile(item){
