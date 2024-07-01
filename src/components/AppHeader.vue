@@ -1,3 +1,10 @@
+<script>
+export default {
+    name:'Header'
+}
+</script>
+
+<!-- HTML-ZONE -->
 <template>
     <header>
         <div>
@@ -6,12 +13,7 @@
     </header>
 </template>
 
-<script>
-export default {
-    name:'AppHeader'
-}
-</script>
-
-<style>
+<!-- STYLE-ZONE -->
+<style scoped>
 
 </style>
