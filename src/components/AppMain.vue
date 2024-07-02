@@ -115,7 +115,7 @@
 </template>
 
 <!-- STYLE-ZONE -->
-<style scoped>
+<style lang="scss" scoped>
     .grid-container{
         display: flex;
         flex-wrap: wrap;

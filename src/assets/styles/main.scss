@@ -1,0 +1,14 @@
+@use './partials/reset' as *;
+@use './partials/mixins' as *;
+@use './partials/typography' as *;
+@use './partials/variables' as *;
+
+body{
+    background-color: $primary-color;
+}
+
+header, footer{
+    height: 120px;
+    background-color: $headfoot-color;
+    color: #fff;
+}

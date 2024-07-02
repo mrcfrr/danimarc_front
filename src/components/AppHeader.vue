@@ -14,6 +14,7 @@ export default {
 </template>
 
 <!-- STYLE-ZONE -->
-<style scoped>
-
+<style lang="scss" scoped>
+    @use '../assets/styles/partials/variables' as *;
+    
 </style>

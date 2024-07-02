@@ -1,13 +1,15 @@
 <script>
   import AppHeader from './components/AppHeader.vue';
   import AppMain from './components/AppMain.vue';
+  import AppFooter from './components/AppFooter.vue';
   import axios from 'axios';
 
   export default {
-    name: 'App',
+    name: 'Danimarc',
     components: {
       AppHeader,
       AppMain,
+      AppFooter,
     },
     data(){
       return {
@@ -56,9 +58,5 @@
 <template>
     <AppHeader />
     <AppMain :data="documents" @download="downloadDocument"/>
+    <AppFooter />
 </template>
-
-<!-- STYLE-ZONE -->
-<style scoped>
-
-</style>
