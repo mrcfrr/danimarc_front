@@ -81,66 +81,84 @@
     };
 </script>
 
-<!-- HTML-ZONE -->
+<!-- ****************************************************************** HTML-ZONE ***************************************************************** -->
 <template>
     <main>
-        <div>
-            <div v-if="path !== ''">
-                <button @click="goBack()">Indietro</button>
+        <div class="folder-container">
+            <div class="grid-container" v-if="path !== ''">
+            
+                <div @click="goBack()" class="grid-item back-folder">
+                    <i class="fas fa-folder"></i>
+                    <p>indietro</p>
+                </div>
+            
             </div>
-
-            <div class="grid-container">
-
-                <div v-for="item in currentData" :key="item.path" class="grid-item">
-                    <div v-if="item.type === 'directory'" @click="openDir(item)">
-                        <i class="fas fa-folder"></i>
-                        <p>{{ item.name }}</p>
+            <div v-for="item in currentData" :key="item.path" class="grid-item">
+                <div v-if="item.type === 'directory'" @click="openDir(item)">
+                    <i class="fas fa-folder"></i>
+                    <p :title="item.name">{{ item.name }}</p>
+                </div>
+                <div v-else>
+                    <img v-if="isImage(item)" :src="fileUrl(item)" alt="Image" @click="viewFile(item)">
+                    <div v-else-if="isPdf(item)" @click="viewFile(item)">
+                        <i class="fas fa-file-pdf"></i>
+                        <p :title="item.name">{{ item.name }}</p>
                     </div>
-                    <div v-else>
-                        <img v-if="isImage(item)" :src="fileUrl(item)" alt="Image" @click="viewFile(item)">
-                        <div v-else-if="isPdf(item)" @click="viewFile(item)">
-                            <i class="fas fa-file-pdf"></i>
-                            <p>{{ item.name }}</p>
-                        </div>
-                        <div v-else @click="downloadDocument(item)">
-                            <i :class="fileIcon(item.name)"></i>
-                            <p>{{ item.name }}</p>
-                        </div>
+                    <div v-else @click="downloadDocument(item)">
+                        <i :class="fileIcon(item.name)"></i>
+                        <p :title="item.name">{{ item.name }}</p>
                     </div>
                 </div>
             </div>
-
         </div>
     </main>
 </template>
 
-<!-- STYLE-ZONE -->
+<!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 <style lang="scss" scoped>
+@use '../assets/styles/partials/variables' as *;
+main{
+    height: calc(100vh - 270px);
+
+    .folder-container{
+        display: flex;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+
     .grid-container{
         display: flex;
         flex-wrap: wrap;
-        margin-top: 50px;
-    }
 
-    .grid-item{
-        flex: 1 1 20%;
-        text-align: center;
-        font-size: 40px;
-        color: yellowgreen;
-    }
+        .back-folder{
+            background-color: $secondary-color;
+        }
 
-    .grid-image{
-        width: 100%;
-        object-fit: cover;
-        cursor: pointer;
-    }
+        .grid-item{
+            background-color: $tertiary-color;
+            height: 120px;
+            width: 120px;
+            text-align: center;
+            font-size: 40px;
+            color: #fff;
+            padding: 20px;
+            border-radius: 20px;
+            margin: 10px;
+
+            p {
+                margin-top: 10px;
+                font-size: 12px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            }
+        }
 
     div i{
         color: yellow;
     }
+}
 
-    .grid-item p{
-        margin-top: 10px;
-        font-size: 15px;
-    }
+    
 </style>

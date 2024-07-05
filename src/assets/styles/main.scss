@@ -1,6 +1,5 @@
 @use './partials/reset' as *;
 @use './partials/mixins' as *;
-@use './partials/typography' as *;
 @use './partials/variables' as *;
 
 body{
@@ -11,4 +10,5 @@ header, footer{
     height: 120px;
     background-color: $headfoot-color;
     color: #fff;
+    font-family: 'lato';
 }

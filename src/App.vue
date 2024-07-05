@@ -4,6 +4,7 @@
   import AppFooter from './components/AppFooter.vue';
   import axios from 'axios';
 
+
   export default {
     name: 'Danimarc',
     components: {
@@ -15,9 +16,11 @@
       return {
         apiBaseUrl: 'http://127.0.0.1:8000/api',
         apiUrls: {
-          documents: '/documents'
+          documents: '/documents',
+          generateQrCode: '/generate-qrcode/'
         },
         documents: [],
+        qrCodeUrl: ''
       }
     },
     methods: {
@@ -26,11 +29,27 @@
           .then(response => {
             this.documents = response.data;
             console.log(this.documents);
+            if(this.documents.length > 0){
+              this.getQrCode(this.documents[0].path);
+            }
+          })
+          .catch(error => {
+            console.log('Error fetching documents: ', error);
+            console.log('Error response: ', error.response);
+
+          });
+      },
+      getQrCode(path){
+        axios.get(this.apiBaseUrl + this.apiUrls.generateQrCode + encodeURIComponent(path))
+          .then(response => {
+            console.log('Qr code URL:', response.data);
+            this.qrCodeUrl = this.apiBaseUrl.replace('/api', '') + response.data;
+            console.log(this.qrCodeUrl);
           })
           .catch(error => {
             console.log(error);
           });
-      },
+        },
       downloadDocument(document){
         const url = this.apiBaseUrl + '/documents/download/' + encodeURIComponent(document.path);
         axios({
@@ -58,5 +77,5 @@
 <template>
     <AppHeader />
     <AppMain :data="documents" @download="downloadDocument"/>
-    <AppFooter />
+    <AppFooter :qrCodeUrl="qrCodeUrl"/>
 </template>
