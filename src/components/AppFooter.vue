@@ -26,7 +26,8 @@
                 <h2>lab</h2>
             </div>
             <div v-if="qrCodeUrl" class="qr">
-                <img :src="qrCodeUrl" alt="QR Code"/>
+                <!-- <img :src="qrCodeUrl" alt="QR Code"/> -->
+                <a>{{ qrCodeUrl }}</a>
             </div>
         </div>
         
@@ -35,10 +36,11 @@
 
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 <style lang=scss scoped>
+
 .footer{
     display: flex;
     justify-content: space-between;
-    padding: 0 100px;
+    padding: 20px 100px;
     align-items: center;
 
     .icons{
@@ -59,8 +61,13 @@
         text-transform: uppercase;
 
         .qr{
-            height: 50px;
-            width: 50px;
+            height: 150px;
+            width: 150px;
+
+            img{
+                height: 100%;
+                width: 100%;
+            }
         }
     }
 }

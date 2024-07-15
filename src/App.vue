@@ -29,9 +29,6 @@
           .then(response => {
             this.documents = response.data;
             console.log(this.documents);
-            if(this.documents.length > 0){
-              this.getQrCode(this.documents[0].path);
-            }
           })
           .catch(error => {
             console.log('Error fetching documents: ', error);
@@ -39,17 +36,9 @@
 
           });
       },
-      getQrCode(path){
-        axios.get(this.apiBaseUrl + this.apiUrls.generateQrCode + encodeURIComponent(path))
-          .then(response => {
-            console.log('Qr code URL:', response.data);
-            this.qrCodeUrl = this.apiBaseUrl.replace('/api', '') + response.data;
-            console.log(this.qrCodeUrl);
-          })
-          .catch(error => {
-            console.log(error);
-          });
-        },
+      updateQrCode(qrCodeUrl){
+        this.qrCodeUrl = qrCodeUrl ? (this.apiBaseUrl.replace('/api', '') + qrCodeUrl) : '';
+      },
       downloadDocument(document){
         const url = this.apiBaseUrl + '/documents/download/' + encodeURIComponent(document.path);
         axios({
@@ -76,6 +65,6 @@
 <!-- HTML-ZONE -->
 <template>
     <AppHeader />
-    <AppMain :data="documents" @download="downloadDocument"/>
+    <AppMain :data="documents" @update-qr-code="updateQrCode" @download="downloadDocument"/>
     <AppFooter :qrCodeUrl="qrCodeUrl"/>
 </template>

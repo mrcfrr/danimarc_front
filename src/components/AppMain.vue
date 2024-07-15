@@ -34,11 +34,21 @@
                 } else {
                     this.path += '/' + directory.name;
                 }
+
+                if(directory.contents && directory.contents.some(item => item.type === 'file')){
+                    this.$emit('update-qr-code', directory.qr_code);
+                }
                 
             },
 
             goBack(){
                 this.path = this.history.pop() || '';
+                const currentFolder = this.currentData.find(folder => folder.path === this.path);
+                if(currentFolder && currentFolder.contents.some(item => item.type === 'file')){
+                    this.$emit('update-qr-code', currentFolder.qr_code);
+                } else {
+                    this.$emit('update-qr-code', '');
+                }
             },
 
             downloadDocument(document){
@@ -117,6 +127,7 @@
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 <style lang="scss" scoped>
 @use '../assets/styles/partials/variables' as *;
+
 main{
     height: calc(100vh - 270px);
 
@@ -124,40 +135,37 @@ main{
         display: flex;
         flex-wrap: wrap;
         margin-top: 30px;
-    }
 
-    .grid-container{
+        .grid-container{
         display: flex;
         flex-wrap: wrap;
 
-        .back-folder{
-            background-color: $secondary-color;
+            .back-folder{
+                background-color: $tertiary-color;
+            }
         }
 
         .grid-item{
-            background-color: $tertiary-color;
-            height: 120px;
-            width: 120px;
-            text-align: center;
-            font-size: 40px;
-            color: #fff;
-            padding: 20px;
-            border-radius: 20px;
-            margin: 10px;
+                background-color: $secondary-color;
+                height: 120px;
+                width: 120px;
+                text-align: center;
+                font-size: 40px;
+                color: #fff;
+                padding: 20px;
+                border-radius: 20px;
+                margin: 10px;
+            }
 
-            p {
-                margin-top: 10px;
-                font-size: 12px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            }
+        p {
+            margin-top: 10px;
+            font-size: 12px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
-
-    div i{
-        color: yellow;
     }
+
 }
 
     
