@@ -1,5 +1,6 @@
 import { createApp } from 'vue';
 import App from './App.vue';
+import * as bootstrap from 'bootstrap';
 
 import './assets/js/index.js';
 import './assets/styles/main.scss';

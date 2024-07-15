@@ -6,6 +6,36 @@
                 type: String,
                 required: false
             }
+        },
+        methods:{
+            qrShare(){
+                if(navigator.share){
+                    navigator.share({
+                        title: 'QR Code',
+                        text: 'Condividi il QR Code',
+                        url: this.qrCodeUrl
+                    }).then(() => {
+                        console.log('Condivisione riuscita');
+                    }).catch(error => {
+                        console.log('Errore condivisione: ', error);
+                    });
+                } else {
+                    alert('Condivisione non supportata');
+                }
+            },
+            qrDownload(){
+                const link = document.createElement('a');
+                link.href = this.qrCodeUrl;
+                link.download = 'qr_code.png';
+                link.click();
+            },
+            qrPrint(){
+                const printWindow = window.open('', '', 'width=600,height=400');
+                printWindow.document.write('<img src="' + this.qrCodeUrl + '" />');
+                printWindow.document.close();
+                printWindow.print();
+            }
+        
         }
     }
 </script>
@@ -26,16 +56,38 @@
                 <h2>lab</h2>
             </div>
             <div v-if="qrCodeUrl" class="qr">
-                <!-- <img :src="qrCodeUrl" alt="QR Code"/> -->
-                <a>{{ qrCodeUrl }}</a>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
             </div>
         </div>
         
     </footer>
+
+
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <div class="qr_icons d-flex gap-3">
+                        <div @click="qrShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
+                        <div @click="qrDownload"><i class="fa-solid fa-cloud-arrow-down" title="Scarica"></i></div>
+                        <div @click="qrPrint"><i class="fa-solid fa-print" title="Stampa"></i></div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img :src="qrCodeUrl" alt="QR Code" :title="qrCodeUrl"/>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+                </div>
+            </div>
+        </div>
 </template>
 
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 <style lang=scss scoped>
+@use '../assets/styles/partials/variables' as *;
 
 .footer{
     display: flex;
@@ -51,7 +103,7 @@
             height: 50px;
             width: 50px;
             border-radius: 50%;
-            background-color: blue;
+            background-color: $tertiary-color;
         }
     }
 
@@ -59,16 +111,23 @@
         display: flex;
         gap: 50px;
         text-transform: uppercase;
+        align-items: center;
+    }
+}
 
-        .qr{
-            height: 150px;
-            width: 150px;
+.qr_icons div{
+    background-color: $headfoot-color;
+    height: 50px;
+    width: 50px;
+    border-radius: 50%;
+    color: $tertiary-color;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
 
-            img{
-                height: 100%;
-                width: 100%;
-            }
-        }
+    &:hover{
+        cursor: pointer;
     }
 }
         
