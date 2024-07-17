@@ -28,12 +28,13 @@
                 link.href = this.qrCodeUrl;
                 link.download = 'qr_code.png';
                 link.click();
+                document.body.removeChild(link);
             },
             qrPrint(){
-                const printWindow = window.open('', '', 'width=600,height=400');
-                printWindow.document.write('<img src="' + this.qrCodeUrl + '" />');
-                printWindow.document.close();
-                printWindow.print();
+                const printWindow = window.open(this.qrCodeUrl);
+                printWindow.onload = () => {
+                    printWindow.print();
+                };
             }
         
         }
