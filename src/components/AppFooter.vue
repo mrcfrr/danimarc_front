@@ -5,6 +5,15 @@
             qrCodeUrl: {
                 type: String,
                 required: false
+            },
+            currentPath: {
+                type: String,
+                required: true
+            }
+        },
+        computed: {
+            displayPath(){
+                return this.currentPath || 'Main directory';
             }
         },
         methods:{
@@ -45,28 +54,20 @@
 <template>
     <footer class="footer">
         
-        <div class="icons">
-            <div></div>
-            <div></div>
-            <div></div>
+        <div><input type="text" :value="displayPath" readonly class="input"></div>
+        <div v-if="qrCodeUrl">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
         </div>
-        <div class="footer-end">
-            <div><h2>16:11:06</h2></div>
-            <div>
-                <h2>sts</h2>
-                <h2>lab</h2>
-            </div>
-            <div v-if="qrCodeUrl" class="qr">
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
-            </div>
+        <div class="logo_box">
+            <img src="../../public/img/sts_logo.png" alt="logo" class="img-fluid">
         </div>
         
     </footer>
 
-
+<!-------------------------------------------------------------------- MODALE ---------------------------------------------------------------->
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
                 <div class="modal-header">
                     <div class="qr_icons d-flex gap-3">
                         <div @click="qrShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
@@ -81,9 +82,9 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
-                </div>
             </div>
         </div>
+    </div>
 </template>
 
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
@@ -96,23 +97,18 @@
     padding: 20px 100px;
     align-items: center;
 
-    .icons{
-        display: flex;
-        gap: 10px;
-
-        div{
-            height: 50px;
-            width: 50px;
-            border-radius: 50%;
-            background-color: $tertiary-color;
-        }
+    .input{
+        text-align: center;
+        width: 500px;
+        height: 40px;
+        border-radius: 20px;
+        padding: 0 20px;
+        border: 1px solid $tertiary-color;
     }
 
-    .footer-end{
-        display: flex;
-        gap: 50px;
-        text-transform: uppercase;
-        align-items: center;
+
+    .logo_box{
+        width: 100px;
     }
 }
 

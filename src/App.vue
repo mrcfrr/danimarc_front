@@ -14,13 +14,14 @@
     },
     data(){
       return {
-        apiBaseUrl: 'http://127.0.0.1:8000/api',
+        apiBaseUrl: 'http://127.0.0.1:8000',
         apiUrls: {
-          documents: '/documents',
-          generateQrCode: '/generate-qrcode/'
+          documents: '/nas',
+          generateQrCode: '/nas/generate-qrcode/'
         },
         documents: [],
-        qrCodeUrl: ''
+        qrCodeUrl: '',
+        currentPath: ''
       }
     },
     methods: {
@@ -37,10 +38,10 @@
           });
       },
       updateQrCode(qrCodeUrl){
-        this.qrCodeUrl = qrCodeUrl ? (this.apiBaseUrl.replace('/api', '') + qrCodeUrl) : '';
+        this.qrCodeUrl = qrCodeUrl ? (this.apiBaseUrl + qrCodeUrl) : '';
       },
       downloadDocument(document){
-        const url = this.apiBaseUrl + '/documents/download/' + encodeURIComponent(document.path);
+        const url = this.apiBaseUrl + '/nas/download/' + encodeURIComponent(document.path);
         axios({
           url,
           method: 'GET',
@@ -54,6 +55,9 @@
         }).catch(error => {
           console.log(error);
         })
+      },
+      updateCurrentPath(path){
+        this.currentPath = path;
       }
     },
     created(){
@@ -65,6 +69,6 @@
 <!-- HTML-ZONE -->
 <template>
     <AppHeader />
-    <AppMain :data="documents" @update-qr-code="updateQrCode" @download="downloadDocument"/>
-    <AppFooter :qrCodeUrl="qrCodeUrl"/>
+    <AppMain :data="documents" @update-qr-code="updateQrCode" @download="downloadDocument" @update-path="updateCurrentPath"/>
+    <AppFooter :qrCodeUrl="qrCodeUrl" :currentPath="currentPath"/>
 </template>

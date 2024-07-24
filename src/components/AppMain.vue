@@ -35,17 +35,21 @@
                     this.path += '/' + directory.name;
                 }
 
-                if(directory.contents && directory.contents.some(item => item.type === 'file')){
-                    this.$emit('update-qr-code', directory.qr_code);
+                this.$emit('update-path', this.path);
+
+                if (directory.qr_code) {
+                    this.$emit('update-qr-code', directory.qr_code); // Emetti l'evento per aggiornare il QR code
                 }
                 
             },
 
             goBack(){
                 this.path = this.history.pop() || '';
+                this.$emit('update-path', this.path);  // Emetti l'evento per aggiornare il percorso
+
                 const currentFolder = this.currentData.find(folder => folder.path === this.path);
-                if(currentFolder && currentFolder.contents.some(item => item.type === 'file')){
-                    this.$emit('update-qr-code', currentFolder.qr_code);
+                if (currentFolder && currentFolder.qr_code) {
+                    this.$emit('update-qr-code', currentFolder.qr_code); // Emetti l'evento per aggiornare il QR code
                 } else {
                     this.$emit('update-qr-code', '');
                 }
@@ -80,8 +84,13 @@
             },
 
             fileUrl(item){
-                const decodedPath = decodeURIComponent(item.path);
-                return `http://127.0.0.1:8000/api/documents${decodedPath}`;
+                // Sostituisce i backslash con forward slash
+                const normalizedPath = item.path.replace(/\\/g, '/');
+                // Codifica il percorso normalizzato
+                const encodedPath = encodeURIComponent(normalizedPath);
+                const url = `http://127.0.0.1:8000/nas/download/${encodedPath}`;
+                console.log('Generated file URL:', url);  // Aggiungi un log per il debug
+                return url;
             },
 
             viewFile(item){
@@ -97,19 +106,21 @@
         <div class="folder-container">
             <div class="grid-container" v-if="path !== ''">
             
-                <div @click="goBack()" class="grid-item back-folder">
+                <div @click="goBack()" class="grid-item back-folder p-3">
                     <i class="fas fa-folder"></i>
                     <p>indietro</p>
                 </div>
             
             </div>
-            <div v-for="item in currentData" :key="item.path" class="grid-item">
+            <div v-for="item in currentData" :key="item.path" :class="['grid-item', { 'has-padding': !isImage(item) }]">
                 <div v-if="item.type === 'directory'" @click="openDir(item)">
                     <i class="fas fa-folder"></i>
                     <p :title="item.name">{{ item.name }}</p>
                 </div>
                 <div v-else>
-                    <img v-if="isImage(item)" :src="fileUrl(item)" alt="Image" @click="viewFile(item)">
+                    <div v-if="isImage(item)" class="img-container">
+                        <img :src="fileUrl(item)" alt="Image" @click="viewFile(item)" class="img">
+                    </div>
                     <div v-else-if="isPdf(item)" @click="viewFile(item)">
                         <i class="fas fa-file-pdf"></i>
                         <p :title="item.name">{{ item.name }}</p>
@@ -155,9 +166,28 @@ main{
                 text-align: center;
                 font-size: 40px;
                 color: #fff;
-                padding: 20px;
                 border-radius: 20px;
                 margin: 10px;
+                overflow: hidden;
+                position: relative;
+                cursor: pointer;
+
+                &.has-padding {
+                    padding: 20px;
+                }
+
+                .img-container {
+                    height: 100%;
+                    width: 100%;
+                    overflow: hidden;
+                }
+
+                .img {
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: block;
+                }
             }
 
         p {
@@ -168,7 +198,6 @@ main{
             text-overflow: ellipsis;
         }
     }
-
 }
 
     

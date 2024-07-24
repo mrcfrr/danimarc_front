@@ -1,26 +1,15 @@
 <script>
-import AppNav from './AppNav.vue';
+
 export default {
     name:'Header',
-    components: {
-        AppNav,
-    }
 }
 </script>
 
 <!-- ****************************************************************** HTML-ZONE ***************************************************************** -->
 <template>
-    <header>
-
-        <div>
-            <h3>Danimarc</h3>
-        </div>
+    <header class="text-center pt-4 text-uppercase">
         
-        <div>
-            <h1>tutorial <v-3></v-3></h1>
-        </div>
-
-        <AppNav />
+        <h1>Danimarc</h1>
         
     </header>
 </template>
@@ -28,11 +17,5 @@ export default {
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 <style lang="scss" scoped>
 @use '../assets/styles/partials/variables' as *;
-header{
-    padding: 20px 50px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-transform: uppercase;
-}
+
 </style>
