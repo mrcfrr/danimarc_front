@@ -59,7 +59,7 @@
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
         </div>
         <div class="logo_box">
-            <img src="../../public/img/sts_logo.png" alt="logo" class="img-fluid">
+            <img src="../../img/sts_logo.png" alt="logo" class="img-fluid">
         </div>
         
     </footer>
