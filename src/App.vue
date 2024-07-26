@@ -28,13 +28,17 @@
       getDocuments(){
         axios.get(this.apiBaseUrl + this.apiUrls.documents)
           .then(response => {
-            this.documents = response.data;
+            // Se la risposta è un oggetto, converti in array
+            if (response.data && !Array.isArray(response.data)) {
+              this.documents = Object.values(response.data);
+            } else {
+              this.documents = response.data;
+            }
             console.log(this.documents);
           })
           .catch(error => {
             console.log('Error fetching documents: ', error);
             console.log('Error response: ', error.response);
-
           });
       },
       updateQrCode(qrCodeUrl){

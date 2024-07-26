@@ -35,26 +35,41 @@
             qrDownload(){
                 const link = document.createElement('a');
                 link.href = this.qrCodeUrl;
-                link.download = 'qr_code.png';
+                link.download = 'qr_code.png';  // Nome del file per il download
                 link.click();
-                document.body.removeChild(link);
             },
             qrPrint(){
-                const printWindow = window.open(this.qrCodeUrl);
-                printWindow.onload = () => {
-                    printWindow.print();
-                };
+                const printIframe = document.createElement('iframe');
+                printIframe.style.position = 'absolute';
+                printIframe.style.width = '0';
+                printIframe.style.height = '0';
+                printIframe.style.border = 'none';
+                document.body.appendChild(printIframe);
+
+                const printDocument = printIframe.contentWindow.document;
+                printDocument.open();
+                printDocument.write('<html><head><title>QR Code Print</title></head><body>');
+                printDocument.write(`<img src="${this.qrCodeUrl}" style="width:100%">`);
+                printDocument.write('</body></html>');
+                printDocument.close();
+
+                printIframe.onload = () => {
+                    printIframe.contentWindow.focus();
+                    printIframe.contentWindow.print();
+                    setTimeout(() => {
+                        document.body.removeChild(printIframe);
+                    }, 1000);
+                }
             }
-        
         }
     }
 </script>
 
-<!-- ****************************************************************** HTML-ZONE ***************************************************************** -->
+<!-- ********************************************************** HTML-ZONE ************************************************************* -->
 <template>
     <footer class="footer">
         
-        <div><input type="text" :value="displayPath" readonly class="input"></div>
+        <div><input type="text" :value="displayPath" readonly class="input fst-italic text-primary font-monospace"></div>
         <div v-if="qrCodeUrl">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
         </div>
@@ -80,6 +95,7 @@
                     <img :src="qrCodeUrl" alt="QR Code" :title="qrCodeUrl"/>
                 </div>
                 <div class="modal-footer">
+                    <input type="text" :value="qrCodeUrl" readonly class="modal_input text-primary m-auto">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -87,7 +103,7 @@
     </div>
 </template>
 
-<!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
+<!-- *************************************************************** STYLE-ZONE ***************************************************** -->
 <style lang=scss scoped>
 @use '../assets/styles/partials/variables' as *;
 
@@ -99,7 +115,7 @@
 
     .input{
         text-align: center;
-        width: 500px;
+        width: 600px;
         height: 40px;
         border-radius: 20px;
         padding: 0 20px;
@@ -126,6 +142,14 @@
     &:hover{
         cursor: pointer;
     }
+}
+
+.modal_input{
+    width: 300px;
+    height: 30px;
+    border-radius: 20px;
+    padding: 0 20px;
+    border: 1px solid $tertiary-color;
 }
         
 </style>
