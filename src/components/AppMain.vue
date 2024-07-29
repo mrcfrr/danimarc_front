@@ -3,23 +3,24 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
 
 export default {
-    name:'Main',
+    name: 'Main',
     props: {
         data: Array,
         required: true,
     },
-    data(){
-        return{
+    data() {
+        return {
             path: '',
             history: [],
             currentFileUrl: '',
             currentFileName: '',
             currentFileType: '',
             showModal: false,
+            isListView: false, // Stato per la visualizzazione a elenco
         };
     },
-    computed:{
-        currentData(){
+    computed: {
+        currentData() {
             let current = this.data;
             const segments = this.path.split('/').filter(segment => segment);
 
@@ -44,10 +45,10 @@ export default {
         }
     },
     methods: {
-        openDir(directory){
+        openDir(directory) {
             this.history.push(this.path);
 
-            if(this.path === ''){
+            if (this.path === '') {
                 this.path = directory.name;
             } else {
                 this.path += '/' + directory.name;
@@ -60,7 +61,7 @@ export default {
             }
         },
 
-        goBack(){
+        goBack() {
             this.path = this.history.pop() || '';
             this.$emit('update-path', this.path);
 
@@ -90,7 +91,7 @@ export default {
             this.showModal = false; // Chiudi la modale
         },
 
-        downloadDocument(document){
+        downloadDocument(document) {
             this.$emit('download', document);
         },
 
@@ -100,10 +101,10 @@ export default {
             return extension;
         },
 
-        fileIcon(filename){
+        fileIcon(filename) {
             if (!filename) return false;
             const extension = this.getFileExtension(filename);
-            switch(extension){
+            switch (extension) {
                 case 'jpg':
                 case 'jpeg':
                 case 'png':
@@ -134,16 +135,16 @@ export default {
             return ['ods', 'xls', 'xlsx'].some(ext => item.name.toLowerCase().endsWith(`.${ext}`));
         },
 
-        fileUrl(item){
+        fileUrl(item) {
             // Sostituisce i backslash con forward slash
             const normalizedPath = item.path.replace(/\\/g, '/');
             // Codifica il percorso normalizzato
             const encodedPath = encodeURIComponent(normalizedPath);
             const url = `http://127.0.0.1:8000/nas/download/${encodedPath}`;
-            console.log('Generated file URL:', url);  // Aggiungi un log per il debug
+            console.log('Generated file URL:', url); // Aggiungi un log per il debug
             return url;
         },
-        fileShare(){
+        fileShare() {
             if (navigator.share) {
                 navigator.share({
                     title: this.currentFileName,
@@ -158,7 +159,7 @@ export default {
                 alert('Condivisione non supportata');
             }
         },
-        fileDownload(){
+        fileDownload() {
             fetch(this.currentFileUrl)
                 .then(response => response.blob())
                 .then(blob => {
@@ -173,7 +174,7 @@ export default {
                 })
                 .catch(error => console.error('Errore durante il download del file', error));
         },
-        filePrint(){
+        filePrint() {
 
             /* const printWindow = window.open('', '_blank');
             printWindow.document.write('<html><head><title>Print</title></head><body>');
@@ -225,15 +226,43 @@ export default {
             setTimeout(() => {
                 document.body.removeChild(printIframe);
             }, 1000);
-            
+
+        }
+    },
+    mounted() {
+        if (window.innerWidth < 768) {
+            this.isListView = true;
         }
     }
 };
 </script>
 
 <template>
-    <main>
-        <div class="folder-container">
+    <main class="position-relative">
+        <div class="view-switcher text-end m-3 form-check form-switch">
+            <label class="form-check-label">Elenco</label>
+            <input @click="isListView = !isListView" class="form-check-input" type="checkbox" role="switch">{{ isListView ? 'Vista Griglia' : 'Vista Elenco' }}
+        </div>
+        <div v-if="isListView" class="list-container mx-3">
+            <div class="grid-container mb-2" v-if="path !== ''">
+                <div @click="goBack()" class="grid-item back-folder p-3">
+                    <i class="fas fa-folder"></i>
+                    <p>indietro</p>
+                </div>
+            </div>
+            <div v-for="item in currentData" :key="item.path" class="list-item d-flex align-items-center mb-2">
+                <div v-if="item.type === 'directory'" @click="openDir(item)" class="flex-grow-1">
+                    <i class="fas fa-folder me-2"></i>
+                    <span :title="item.name">{{ item.name }}</span>
+                </div>
+                <div v-else @click="isImage(item) ? openFileModal(item) : downloadDocument(item)" class="flex-grow-1">
+                    <i :class="fileIcon(item.name)" class="me-2"></i>
+                    <span :title="item.name">{{ item.name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="folder-container">
             <div class="grid-container" v-if="path !== ''">
                 <div @click="goBack()" class="grid-item back-folder p-3">
                     <i class="fas fa-folder"></i>
@@ -267,40 +296,40 @@ export default {
     </main>
 <!------------------------------------------------------------ MODALE ----------------------------------------------------------------------->
 
-        <div v-if="showModal" class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="fileModalLabel" aria-modal="true" role="dialog">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <div class="file_icons d-flex gap-3">
-                            <div @click="fileShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
-                            <div @click="fileDownload"><i class="fa-solid fa-cloud-arrow-down" title="Scarica"></i></div>
-                            <div @click="filePrint"><i class="fa-solid fa-print" title="Stampa"></i></div>
-                        </div>
-                        <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
+    <div v-if="showModal" class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="fileModalLabel" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="file_icons d-flex gap-3">
+                        <div @click="fileShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
+                        <div @click="fileDownload"><i class="fa-solid fa-cloud-arrow-down" title="Scarica"></i></div>
+                        <div @click="filePrint"><i class="fa-solid fa-print" title="Stampa"></i></div>
                     </div>
-                    <div class="modal-body text-center">
-                        <div v-if="currentFileType === 'image'">
-                            <img :src="currentFileUrl" alt="Image Preview" class="modal_img">
-                        </div>
-                        <div v-else-if="currentFileType === 'pdf'">
-                            <embed :src="currentFileUrl" type="application/pdf" width="100%" height="600px"/>
-                        </div>
-                        <div v-else-if="currentFileType === 'spreadsheet'">
-                            <iframe :src="`https://view.officeapps.live.com/op/embed.aspx?src=${currentFileUrl}`" width="100%" height="600px"></iframe>
-                        </div>
-                        <div v-else>
-                            <p>Impossibile mostrare l'anteprima.</p>
-                        </div>
+                    <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div v-if="currentFileType === 'image'">
+                        <img :src="currentFileUrl" alt="Image Preview" class="modal_img">
                     </div>
-                    <div class="modal-footer">
-                        <h5 class="modal-title m-auto" id="fileModalLabel">{{ currentFileName }}</h5>
-                        <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
+                    <div v-else-if="currentFileType === 'pdf'">
+                        <embed :src="currentFileUrl" type="application/pdf" width="100%" height="600px" />
                     </div>
+                    <div v-else-if="currentFileType === 'spreadsheet'">
+                        <iframe :src="`https://view.officeapps.live.com/op/embed.aspx?src=${currentFileUrl}`" width="100%" height="600px"></iframe>
+                    </div>
+                    <div v-else>
+                        <p>Impossibile mostrare l'anteprima.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <h5 class="modal-title m-auto" id="fileModalLabel">{{ currentFileName }}</h5>
+                    <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
                 </div>
             </div>
         </div>
-        <div v-if="showModal" class="modal-backdrop fade show"></div>
-    
+    </div>
+    <div v-if="showModal" class="modal-backdrop fade show"></div>
+
 </template>
 
 <!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
@@ -308,53 +337,52 @@ export default {
 <style lang="scss" scoped>
 @use '../assets/styles/partials/variables' as *;
 
-main{
-    height: calc(100vh - 270px);
+main {
 
-    .folder-container{
+    .folder-container {
         display: flex;
         flex-wrap: wrap;
         margin-top: 30px;
 
-        .grid-container{
-        display: flex;
-        flex-wrap: wrap;
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
 
-            .back-folder{
+            .back-folder {
                 background-color: $tertiary-color;
             }
         }
 
-        .grid-item{
-                background-color: $secondary-color;
-                height: 120px;
-                width: 120px;
-                text-align: center;
-                font-size: 40px;
-                color: #fff;
-                border-radius: 20px;
-                margin: 10px;
-                overflow: hidden;
-                position: relative;
-                cursor: pointer;
+        .grid-item {
+            background-color: $secondary-color;
+            height: 120px;
+            width: 120px;
+            text-align: center;
+            font-size: 40px;
+            color: #fff;
+            border-radius: 20px;
+            margin: 10px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
 
-                &.has-padding {
-                    padding: 20px;
-                }
-
-                .img-container {
-                    height: 100%;
-                    width: 100%;
-                    overflow: hidden;
-                }
-
-                .img {
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    display: block;
-                }
+            &.has-padding {
+                padding: 20px;
             }
+
+            .img-container {
+                height: 100%;
+                width: 100%;
+                overflow: hidden;
+            }
+
+            .img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+            }
+        }
 
         p {
             margin-top: 10px;
@@ -364,12 +392,32 @@ main{
             text-overflow: ellipsis;
         }
     }
-    
+
+    .list-container {
+        .list-item {
+            padding: 10px;
+            border: 1px solid $secondary-color;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+
+            &:hover {
+                background-color: $secondary-color;
+                color: #fff;
+            }
+
+            i {
+                margin-right: 10px;
+            }
+        }
+    }
 }
-.modal_img{
-        width: 500px;
+
+.modal_img {
+    width: 500px;
 }
-.file_icons div{
+
+.file_icons div {
     background-color: $headfoot-color;
     height: 50px;
     width: 50px;
@@ -380,7 +428,7 @@ main{
     align-items: center;
     font-size: 20px;
 
-    &:hover{
+    &:hover {
         cursor: pointer;
     }
 }

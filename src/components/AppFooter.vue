@@ -1,79 +1,81 @@
 <script>
-    export default {
-        name:'Footer',
-        props: {
-            qrCodeUrl: {
-                type: String,
-                required: false
-            },
-            currentPath: {
-                type: String,
-                required: true
+export default {
+    name:'Footer',
+    props: {
+        qrCodeUrl: {
+            type: String,
+            required: false
+        },
+        currentPath: {
+            type: String,
+            required: true
+        }
+    },
+    computed: {
+        displayPath(){
+            return this.currentPath || 'Main directory';
+        }
+    },
+    methods:{
+        qrShare(){
+            if(navigator.share){
+                navigator.share({
+                    title: 'QR Code',
+                    text: 'Condividi il QR Code',
+                    url: this.qrCodeUrl
+                }).then(() => {
+                    console.log('Condivisione riuscita');
+                }).catch(error => {
+                    console.log('Errore condivisione: ', error);
+                });
+            } else {
+                alert('Condivisione non supportata');
             }
         },
-        computed: {
-            displayPath(){
-                return this.currentPath || 'Main directory';
-            }
+        qrDownload(){
+            const link = document.createElement('a');
+            link.href = this.qrCodeUrl;
+            link.download = 'qr_code.png';  // Nome del file per il download
+            link.click();
         },
-        methods:{
-            qrShare(){
-                if(navigator.share){
-                    navigator.share({
-                        title: 'QR Code',
-                        text: 'Condividi il QR Code',
-                        url: this.qrCodeUrl
-                    }).then(() => {
-                        console.log('Condivisione riuscita');
-                    }).catch(error => {
-                        console.log('Errore condivisione: ', error);
-                    });
-                } else {
-                    alert('Condivisione non supportata');
-                }
-            },
-            qrDownload(){
-                const link = document.createElement('a');
-                link.href = this.qrCodeUrl;
-                link.download = 'qr_code.png';  // Nome del file per il download
-                link.click();
-            },
-            qrPrint(){
-                const printIframe = document.createElement('iframe');
-                printIframe.style.position = 'absolute';
-                printIframe.style.width = '0';
-                printIframe.style.height = '0';
-                printIframe.style.border = 'none';
-                document.body.appendChild(printIframe);
+        qrPrint(){
+            const printIframe = document.createElement('iframe');
+            printIframe.style.position = 'absolute';
+            printIframe.style.width = '0';
+            printIframe.style.height = '0';
+            printIframe.style.border = 'none';
+            document.body.appendChild(printIframe);
 
-                const printDocument = printIframe.contentWindow.document;
-                printDocument.open();
-                printDocument.write('<html><head><title>QR Code Print</title></head><body>');
-                printDocument.write(`<img src="${this.qrCodeUrl}" style="width:100%">`);
-                printDocument.write('</body></html>');
-                printDocument.close();
+            const printDocument = printIframe.contentWindow.document;
+            printDocument.open();
+            printDocument.write('<html><head><title>QR Code Print</title></head><body>');
+            printDocument.write(`<img src="${this.qrCodeUrl}" style="width:100%">`);
+            printDocument.write('</body></html>');
+            printDocument.close();
 
-                printIframe.onload = () => {
-                    printIframe.contentWindow.focus();
-                    printIframe.contentWindow.print();
-                    setTimeout(() => {
-                        document.body.removeChild(printIframe);
-                    }, 1000);
-                }
+            printIframe.onload = () => {
+                printIframe.contentWindow.focus();
+                printIframe.contentWindow.print();
+                setTimeout(() => {
+                    document.body.removeChild(printIframe);
+                }, 1000);
             }
         }
     }
+}
 </script>
 
 <!-- ********************************************************** HTML-ZONE ************************************************************* -->
 <template>
-    <footer class="footer">
+    <footer class="footer d-flex flex-column flex-lg-row justify-content-between align-items-center py-3 px-4 position-absolute bottom-0 start-0 end-0">
         
-        <div><input type="text" :value="displayPath" readonly class="input fst-italic text-primary font-monospace"></div>
-        <div v-if="qrCodeUrl">
+        <div class="input-container mb-3 mb-md-0">
+            <input type="text" :value="displayPath" readonly class="input fst-italic text-primary text-center font-monospace">
+        </div>
+        <div v-if="qrCodeUrl" class="mb-3 mb-md-0 mt-md-3">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
         </div>
-        <div class="logo_box">
+        <div class="logo_box mt-md-3">
             <img src="../../img/sts_logo.png" alt="logo" class="img-fluid">
         </div>
         
@@ -104,24 +106,22 @@
 </template>
 
 <!-- *************************************************************** STYLE-ZONE ***************************************************** -->
-<style lang=scss scoped>
+<style lang="scss" scoped>
 @use '../assets/styles/partials/variables' as *;
 
 .footer{
-    display: flex;
-    justify-content: space-between;
-    padding: 20px 100px;
-    align-items: center;
+    .input-container {
+        width: 100%;
+        max-width: 600px;
+    }
 
     .input{
-        text-align: center;
-        width: 600px;
+        width: 100%;
         height: 40px;
         border-radius: 20px;
         padding: 0 20px;
         border: 1px solid $tertiary-color;
     }
-
 
     .logo_box{
         width: 100px;
@@ -145,11 +145,11 @@
 }
 
 .modal_input{
-    width: 300px;
+    width: 100%;
+    max-width: 300px;
     height: 30px;
     border-radius: 20px;
     padding: 0 20px;
     border: 1px solid $tertiary-color;
 }
-        
 </style>
