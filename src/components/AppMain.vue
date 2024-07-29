@@ -1,6 +1,7 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
+import { useRoute, useRouter } from 'vue-router';
 
 export default {
     name: 'Main',
@@ -10,8 +11,6 @@ export default {
     },
     data() {
         return {
-            path: '',
-            history: [],
             currentFileUrl: '',
             currentFileName: '',
             currentFileType: '',
@@ -20,6 +19,9 @@ export default {
         };
     },
     computed: {
+        path() {
+            return this.route.params.pathMatch ? this.route.params.pathMatch.join('/') : '';
+        },
         currentData() {
             let current = this.data;
             const segments = this.path.split('/').filter(segment => segment);
@@ -46,25 +48,16 @@ export default {
     },
     methods: {
         openDir(directory) {
-            this.history.push(this.path);
-
-            if (this.path === '') {
-                this.path = directory.name;
-            } else {
-                this.path += '/' + directory.name;
-            }
-
-            this.$emit('update-path', this.path);
-
+            this.router.push({ name: 'Main', params: { pathMatch: this.path ? this.path.split('/').concat(directory.name) : [directory.name] } });
             if (directory.qr_code) {
                 this.$emit('update-qr-code', directory.qr_code);
             }
         },
 
         goBack() {
-            this.path = this.history.pop() || '';
-            this.$emit('update-path', this.path);
-
+            const segments = this.path.split('/');
+            segments.pop();
+            this.router.push({ name: 'Main', params: { pathMatch: segments } });
             const currentFolder = this.currentData.find(folder => folder.path === this.path);
             if (currentFolder && currentFolder.qr_code) {
                 this.$emit('update-qr-code', currentFolder.qr_code);
@@ -231,8 +224,24 @@ export default {
     },
     mounted() {
         if (window.innerWidth < 768) {
-            this.isListView = true;
+            this.isListView = true; // Imposta la modalità elenco su dispositivi mobili
         }
+    },
+    watch: {
+        path(newPath) {
+            this.$emit('update-path', newPath);
+            const currentFolder = this.currentData.find(folder => folder.path === this.path);
+            if (currentFolder && currentFolder.qr_code) {
+                this.$emit('update-qr-code', currentFolder.qr_code);
+            } else {
+                this.$emit('update-qr-code', '');
+            }
+        }
+    },
+    setup() {
+        const route = useRoute();
+        const router = useRouter();
+        return { route, router };
     }
 };
 </script>
@@ -241,14 +250,13 @@ export default {
     <main class="position-relative">
         <div class="view-switcher text-end m-3 form-check form-switch">
             <label class="form-check-label">Elenco</label>
-            <input @click="isListView = !isListView" class="form-check-input" type="checkbox" role="switch">{{ isListView ? 'Vista Griglia' : 'Vista Elenco' }}
+            <input @click="isListView = !isListView" class="form-check-input"
+            type="checkbox" role="switch">{{ isListView ? 'Vista Griglia' : 'Vista Elenco' }}
         </div>
         <div v-if="isListView" class="list-container mx-3">
-            <div class="grid-container mb-2" v-if="path !== ''">
-                <div @click="goBack()" class="grid-item back-folder p-3">
-                    <i class="fas fa-folder"></i>
-                    <p>indietro</p>
-                </div>
+            <div class="list-item d-flex align-items-center mb-2" v-if="path !== ''" @click="goBack()">
+                <i class="fas fa-folder me-2"></i>
+                <span>indietro</span>
             </div>
             <div v-for="item in currentData" :key="item.path" class="list-item d-flex align-items-center mb-2">
                 <div v-if="item.type === 'directory'" @click="openDir(item)" class="flex-grow-1">
@@ -256,12 +264,13 @@ export default {
                     <span :title="item.name">{{ item.name }}</span>
                 </div>
                 <div v-else @click="isImage(item) ? openFileModal(item) : downloadDocument(item)" class="flex-grow-1">
-                    <i :class="fileIcon(item.name)" class="me-2"></i>
+                    <i :class="fileIcon(item.name)"></i>
                     <span :title="item.name">{{ item.name }}</span>
                 </div>
             </div>
         </div>
 
+        
         <div v-else class="folder-container">
             <div class="grid-container" v-if="path !== ''">
                 <div @click="goBack()" class="grid-item back-folder p-3">
