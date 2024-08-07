@@ -2,13 +2,9 @@
 export default {
     name:'Footer',
     props: {
-        qrCodeUrl: {
-            type: String,
-            required: false
-        },
         currentPath: {
             type: String,
-            required: true
+            default: ''
         }
     },
     computed: {
@@ -17,50 +13,7 @@ export default {
         }
     },
     methods:{
-        qrShare(){
-            if(navigator.share){
-                navigator.share({
-                    title: 'QR Code',
-                    text: 'Condividi il QR Code',
-                    url: this.qrCodeUrl
-                }).then(() => {
-                    console.log('Condivisione riuscita');
-                }).catch(error => {
-                    console.log('Errore condivisione: ', error);
-                });
-            } else {
-                alert('Condivisione non supportata');
-            }
-        },
-        qrDownload(){
-            const link = document.createElement('a');
-            link.href = this.qrCodeUrl;
-            link.download = 'qr_code.png';  // Nome del file per il download
-            link.click();
-        },
-        qrPrint(){
-            const printIframe = document.createElement('iframe');
-            printIframe.style.position = 'absolute';
-            printIframe.style.width = '0';
-            printIframe.style.height = '0';
-            printIframe.style.border = 'none';
-            document.body.appendChild(printIframe);
-
-            const printDocument = printIframe.contentWindow.document;
-            printDocument.open();
-            printDocument.write('<html><head><title>QR Code Print</title></head><body>');
-            printDocument.write(`<img src="${this.qrCodeUrl}" style="width:100%">`);
-            printDocument.write('</body></html>');
-            printDocument.close();
-
-            printIframe.onload = () => {
-                printIframe.contentWindow.focus();
-                printIframe.contentWindow.print();
-                setTimeout(() => {
-                    document.body.removeChild(printIframe);
-                }, 1000);
-            }
-        }
+        
     }
 }
 </script>
@@ -72,37 +25,14 @@ export default {
         <div class="input-container mb-3 mb-md-0">
             <input type="text" :value="displayPath" readonly class="input fst-italic text-primary text-center font-monospace">
         </div>
-        <div v-if="qrCodeUrl" class="mb-3 mb-md-0 mt-md-3">
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">Visualizza QR code</button>
-        </div>
+
+        
         <div class="logo_box mt-md-3">
             <img src="../../img/sts_logo.png" alt="logo" class="img-fluid">
         </div>
         
     </footer>
 
-<!-------------------------------------------------------------------- MODALE ---------------------------------------------------------------->
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="qr_icons d-flex gap-3">
-                        <div @click="qrShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
-                        <div @click="qrDownload"><i class="fa-solid fa-cloud-arrow-down" title="Scarica"></i></div>
-                        <div @click="qrPrint"><i class="fa-solid fa-print" title="Stampa"></i></div>
-                    </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <img :src="qrCodeUrl" alt="QR Code" :title="qrCodeUrl"/>
-                </div>
-                <div class="modal-footer">
-                    <input type="text" :value="qrCodeUrl" readonly class="modal_input text-primary m-auto">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </template>
 
 <!-- *************************************************************** STYLE-ZONE ***************************************************** -->
@@ -128,28 +58,4 @@ export default {
     }
 }
 
-.qr_icons div{
-    background-color: $headfoot-color;
-    height: 50px;
-    width: 50px;
-    border-radius: 50%;
-    color: $tertiary-color;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-
-    &:hover{
-        cursor: pointer;
-    }
-}
-
-.modal_input{
-    width: 100%;
-    max-width: 300px;
-    height: 30px;
-    border-radius: 20px;
-    padding: 0 20px;
-    border: 1px solid $tertiary-color;
-}
 </style>

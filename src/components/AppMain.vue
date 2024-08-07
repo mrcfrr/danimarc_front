@@ -1,101 +1,130 @@
 <script>
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap';
-import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+import QRCode from 'qrcode';
 
 export default {
     name: 'Main',
     props: {
-        data: Array,
-        required: true,
+        data: {
+            type: Array,
+            default: () => [],
+            required: true,
+        },
+        initialPath: {
+            type: String,
+            default: '',
+        },
     },
     data() {
         return {
+            path: this.initialPath,
+            history: [],
             currentFileUrl: '',
             currentFileName: '',
             currentFileType: '',
             showModal: false,
-            isListView: false, // Stato per la visualizzazione a elenco
+            isListView: false,
+            qrCodeDataUrl: '', 
+            qrCodeLink: '',
+            isQrCodeModal: false,
+            active: true,
         };
     },
     computed: {
-        path() {
-            return this.route.params.pathMatch ? this.route.params.pathMatch.join('/') : '';
-        },
         currentData() {
-            let current = this.data;
-            const segments = this.path.split('/').filter(segment => segment);
-
-            for (let segment of segments) {
-                if (Array.isArray(current)) {
-                    let folder = current.find(item => item.name === segment && item.type === 'directory');
-                    if (folder) {
-                        current = folder.contents;
-                    } else {
-                        current = []; // In caso di errore, assegna un array vuoto
-                    }
-                } else {
-                    current = []; // In caso di errore, assegna un array vuoto
-                }
+            return this.data.length ? this.data : [];
+        },
+        containsFiles() {
+            return this.currentData.some(item => item.type === 'file');
+        }
+    },
+    watch: {
+        currentData(newVal) {
+            const containsOnlyFiles = newVal.every(item => item.type === 'file');
+            if (containsOnlyFiles) {
+                this.generateQrCode(this.path);
+            } else {
+                this.qrCodeDataUrl = ''; // Resetta il QR code se non ci sono solo file
             }
-
-            if (!Array.isArray(current)) {
-                current = [];
-            }
-
-            return current.filter(item => item.name && item.name.trim() !== '');
         }
     },
     methods: {
+        fetchData(path = this.path) {
+            console.log('Fetching data for path:', path);
+            axios.get('http://127.0.0.1:8000/nas/fetch-data', {
+                params: { path }
+            })
+            .then(response => {
+                console.log('Fetched data:', response.data);
+                if (response.data) {
+                    this.$emit('update-path', path);
+                    this.$emit('update-documents', response.data);
+                } else {
+                    console.error('Invalid response data:', response.data);
+                }
+            })
+            .catch(error => {
+                console.error('Error during data fetch:', error);
+            });
+        },
+        updatePathInUrl() {
+            console.log('Updating path in URL:', this.path);
+            const queryParams = new URLSearchParams(window.location.search);
+            queryParams.set('path', encodeURIComponent(this.path));
+            history.replaceState(null, '', `${window.location.pathname}?${queryParams}`);
+        },
         openDir(directory) {
-            this.router.push({ name: 'Main', params: { pathMatch: this.path ? this.path.split('/').concat(directory.name) : [directory.name] } });
-            if (directory.qr_code) {
-                this.$emit('update-qr-code', directory.qr_code);
+            console.log('Opening directory:', directory);
+            if (directory.path) {
+                this.history.push(this.path);
+                this.path = decodeURIComponent(directory.path);
+                console.log('Updated path:', this.path);
+                this.updatePathInUrl();
+                this.fetchData(this.path);
             }
         },
+        generateQrCode(path) {
+            console.log('Generating QR code for path:', path);
+            const clientUrl = `${window.location.origin}/nas?path=${encodeURIComponent(path)}`;
 
+            // Utilizza la libreria QRCode per generare un QR code come data URL
+            QRCode.toDataURL(clientUrl, { width: 200, margin: 2 }, (err, url) => {
+                if (err) {
+                    console.error('Errore durante la generazione del QR code', err);
+                } else {
+                    console.log('QR Code Data URL:', url); // Log per verificare l'URL del QR code
+                    this.qrCodeDataUrl = url; // Memorizza l'immagine del QR code come data URL
+                    this.qrCodeLink = clientUrl; // Memorizza l'URL da visualizzare sotto il QR code
+                    this.$emit('update-qr-code', url);
+                }
+            });
+        },
         goBack() {
-            const segments = this.path.split('/');
-            segments.pop();
-            this.router.push({ name: 'Main', params: { pathMatch: segments } });
-            const currentFolder = this.currentData.find(folder => folder.path === this.path);
-            if (currentFolder && currentFolder.qr_code) {
-                this.$emit('update-qr-code', currentFolder.qr_code);
-            } else {
-                this.$emit('update-qr-code', '');
-            }
+            this.path = this.history.pop() || '';
+            this.fetchData();
         },
-
         openFileModal(item) {
             this.currentFileUrl = this.fileUrl(item);
             this.currentFileName = item.name;
-            if (this.isImage(item)) {
-                this.currentFileType = 'image';
-            } else if (this.isPdf(item)) {
-                this.currentFileType = 'pdf';
-            } else if (this.isSpreadsheet(item)) {
-                this.currentFileType = 'spreadsheet';
-            } else {
-                this.currentFileType = 'other';
-            }
-            this.showModal = true; // Mostra la modale
+            this.currentFileType = this.isImage(item) ? 'image' :
+            this.isPdf(item) ? 'pdf' :
+            this.isSpreadsheet(item) ? 'spreadsheet' : 'other';
+            this.isQrCodeModal = false;
+            this.showModal = true;
         },
         closeModal() {
-            this.showModal = false; // Chiudi la modale
+            this.showModal = false;
+            this.isQrCodeModal = false;
         },
-
         downloadDocument(document) {
             this.$emit('download', document);
         },
-
         getFileExtension(filename) {
-            const parts = filename.split('.');
-            const extension = parts.length > 1 ? parts.pop().toLowerCase() : '';
-            return extension;
+            return filename.split('.').pop().toLowerCase();
         },
-
         fileIcon(filename) {
-            if (!filename) return false;
             const extension = this.getFileExtension(filename);
             switch (extension) {
                 case 'jpg':
@@ -105,7 +134,6 @@ export default {
                 case 'pdf':
                     return 'fas fa-file-pdf';
                 case 'ods':
-                    return 'fas fa-file-excel';
                 case 'xls':
                 case 'xlsx':
                     return 'fas fa-file-excel';
@@ -113,164 +141,76 @@ export default {
                     return 'fas fa-file';
             }
         },
-
         isImage(item) {
-            if (!item.name) return false;
             return ['png', 'jpg', 'jpeg'].some(ext => item.name.toLowerCase().endsWith(`.${ext}`));
         },
-
         isPdf(item) {
-            if (!item.name) return false;
             return item.name.toLowerCase().endsWith('.pdf');
         },
         isSpreadsheet(item) {
-            if (!item.name) return false;
             return ['ods', 'xls', 'xlsx'].some(ext => item.name.toLowerCase().endsWith(`.${ext}`));
         },
-
         fileUrl(item) {
-            // Sostituisce i backslash con forward slash
-            const normalizedPath = item.path.replace(/\\/g, '/');
-            // Codifica il percorso normalizzato
-            const encodedPath = encodeURIComponent(normalizedPath);
-            const url = `http://127.0.0.1:8000/nas/download/${encodedPath}`;
-            console.log('Generated file URL:', url); // Aggiungi un log per il debug
-            return url;
+            return `http://127.0.0.1:8000/nas/download/${encodeURIComponent(item.path)}`;
         },
-        fileShare() {
-            if (navigator.share) {
-                navigator.share({
-                    title: this.currentFileName,
-                    text: 'Condividi questo file',
-                    url: this.currentFileUrl,
-                }).then(() => {
-                    console.log('Condivisione riuscita');
-                }).catch(error => {
-                    console.error('Errore durante la condivisione', error);
-                });
+        showQrCodeModal() {
+            if (this.qrCodeDataUrl) {
+                console.log('Showing QR code modal with Data URL:', this.qrCodeDataUrl);
+                this.isQrCodeModal = true;
+                this.showModal = true;
             } else {
-                alert('Condivisione non supportata');
+                alert('QR code non disponibile per questa cartella.');
             }
         },
-        fileDownload() {
-            fetch(this.currentFileUrl)
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = this.currentFileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                })
-                .catch(error => console.error('Errore durante il download del file', error));
-        },
-        filePrint() {
-
-            /* const printWindow = window.open('', '_blank');
-            printWindow.document.write('<html><head><title>Print</title></head><body>');
-            if (this.currentFileType === 'image') {
-                printWindow.document.write(`<img src="${this.currentFileUrl}" style="width:100%">`);
-            } else if (this.currentFileType === 'pdf') {
-                printWindow.document.write(`<embed src="${this.currentFileUrl}" type="application/pdf" width="100%" height="100%">`);
-            } else if (this.currentFileType === 'spreadsheet') {
-                printWindow.document.write(`<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${this.currentFileUrl}" width="100%" height="100%"></iframe>`);
-            } else {
-                printWindow.document.write('<p>Impossibile mostrare l\'anteprima.</p>');
-            }
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.onload = () => {
-                printWindow.print();
-                printWindow.close();
-            }; */
-
-            const printIframe = document.createElement('iframe');
-            printIframe.style.position = 'absolute';
-            printIframe.style.width = '0';
-            printIframe.style.height = '0';
-            printIframe.style.border = 'none';
-            document.body.appendChild(printIframe);
-
-            const printDocument = printIframe.contentWindow.document;
-            printDocument.open();
-            printDocument.write('<html><head><title>' + this.currentFileName + '</title>');
-            printDocument.write('</head><body>');
-
-            if (this.currentFileType === 'image') {
-                printDocument.write(`<img src="${this.currentFileUrl}" style="width:100%">`);
-            } else if (this.currentFileType === 'pdf') {
-                printDocument.write(`<embed src="${this.currentFileUrl}" type="application/pdf" width="100%" height="100%">`);
-            } else if (this.currentFileType === 'spreadsheet') {
-                printDocument.write(`<iframe src="https://view.officeapps.live.com/op/embed.aspx?src=${this.currentFileUrl}" width="100%" height="600px"></iframe>`);
-            } else {
-                printDocument.write('<p>Impossibile mostrare l\'anteprima.</p>');
-            }
-
-            printDocument.write('</body></html>');
-            printDocument.close();
-
-            printIframe.contentWindow.focus();
-            printIframe.contentWindow.print();
-
-            // Rimuovere l'iframe dopo la stampa
-            setTimeout(() => {
-                document.body.removeChild(printIframe);
-            }, 1000);
-
+        downloadQrCode() {
+            // Funzione per scaricare l'immagine del QR code
+            const link = document.createElement('a');
+            link.href = this.qrCodeDataUrl;
+            link.download = 'qr_code.png';
+            link.click();
         }
     },
     mounted() {
-        if (window.innerWidth < 768) {
-            this.isListView = true; // Imposta la modalità elenco su dispositivi mobili
+        console.log('Mounted: initialPath is', this.initialPath);
+        if (this.initialPath && this.initialPath !== '') {
+            this.path = decodeURIComponent(this.initialPath);
+            this.fetchData(this.path);
+            this.updatePathInUrl();
+        } else {
+            console.error('initialPath is empty or not provided, fetching main directory');
+            this.fetchData('');
         }
-    },
-    watch: {
-        path(newPath) {
-            this.$emit('update-path', newPath);
-            const currentFolder = this.currentData.find(folder => folder.path === this.path);
-            if (currentFolder && currentFolder.qr_code) {
-                this.$emit('update-qr-code', currentFolder.qr_code);
-            } else {
-                this.$emit('update-qr-code', '');
-            }
-        }
-    },
-    setup() {
-        const route = useRoute();
-        const router = useRouter();
-        return { route, router };
     }
-};
+}
 </script>
 
 <template>
     <main class="position-relative">
-        <div class="view-switcher text-end m-3 form-check form-switch">
-            <label class="form-check-label">Elenco</label>
-            <input @click="isListView = !isListView" class="form-check-input"
-            type="checkbox" role="switch">{{ isListView ? 'Vista Griglia' : 'Vista Elenco' }}
+        <div class="view-switcher m-3 form-check form-switch text-light">
+            <label class="form-check-label"></label>
+            <input @click="isListView = !isListView" class="form-check-input" type="checkbox" role="switch">Cambia vista
+
+            <!-- Pulsante per visualizzare il QR code -->
+            <div class="text-center mt-4">
+                <button v-if="qrCodeDataUrl" class="btn btn-primary" @click="showQrCodeModal">Visualizza QR Code</button>
+            </div>
         </div>
         <div v-if="isListView" class="list-container mx-3">
-            <div class="list-item d-flex align-items-center mb-2" v-if="path !== ''" @click="goBack()">
+            <div class="list-item d-flex align-items-center mb-2 bg-warning" v-if="path !== ''" @click="goBack()">
                 <i class="fas fa-folder me-2"></i>
                 <span>indietro</span>
             </div>
-            <div v-for="item in currentData" :key="item.path" class="list-item d-flex align-items-center mb-2">
+            <div v-for="item in currentData" :key="item.path" class="list-item d-flex align-items-center mb-2 bg-light">
                 <div v-if="item.type === 'directory'" @click="openDir(item)" class="flex-grow-1">
                     <i class="fas fa-folder me-2"></i>
                     <span :title="item.name">{{ item.name }}</span>
                 </div>
                 <div v-else @click="isImage(item) ? openFileModal(item) : downloadDocument(item)" class="flex-grow-1">
-                    <i :class="fileIcon(item.name)"></i>
+                    <i :class="fileIcon(item.name)" class="me-2"></i>
                     <span :title="item.name">{{ item.name }}</span>
                 </div>
             </div>
         </div>
-
-        
         <div v-else class="folder-container">
             <div class="grid-container" v-if="path !== ''">
                 <div @click="goBack()" class="grid-item back-folder p-3">
@@ -302,52 +242,51 @@ export default {
                 </div>
             </div>
         </div>
-    </main>
-<!------------------------------------------------------------ MODALE ----------------------------------------------------------------------->
+        
+        <!-- Modale per i file e QR Code -->
+        <div v-if="showModal" class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="fileModalLabel" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="fileModalLabel">{{ isQrCodeModal ? 'QR Code' : currentFileName }}</h5>
+                        <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <div v-if="isQrCodeModal && qrCodeDataUrl" class="d-flex flex-column w-50 m-auto">
+                            <img :src="qrCodeDataUrl" alt="QR Code" class="qr-code img-fluid">
 
-    <div v-if="showModal" class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="fileModalLabel" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="file_icons d-flex gap-3">
-                        <div @click="fileShare"><i class="fa-solid fa-share-nodes" title="Condividi"></i></div>
-                        <div @click="fileDownload"><i class="fa-solid fa-cloud-arrow-down" title="Scarica"></i></div>
-                        <div @click="filePrint"><i class="fa-solid fa-print" title="Stampa"></i></div>
+                            <!-- Pulsante per scaricare il QR Code -->
+                            <button @click="downloadQrCode" class="btn btn-success mt-3">Scarica QR Code</button>
+                        </div>
+                        <div v-else-if="currentFileType === 'image'">
+                            <img :src="currentFileUrl" class="img-fluid" alt="Image preview">
+                        </div>
+                        <div v-else-if="currentFileType === 'pdf'">
+                            <embed :src="currentFileUrl" width="100%" height="600px" type="application/pdf" />
+                        </div>
+                        <div v-else-if="currentFileType === 'spreadsheet'">
+                            <iframe :src="currentFileUrl" width="100%" height="600px"></iframe>
+                        </div>
+                        <div v-else>
+                            <p>Nessuna anteprima disponibile per questo file. Puoi scaricarlo <a :href="currentFileUrl" download>qui</a>.</p>
+                        </div>
                     </div>
-                    <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-center">
-                    <div v-if="currentFileType === 'image'">
-                        <img :src="currentFileUrl" alt="Image Preview" class="modal_img">
+                    <div class="modal-footer d-flex justify-content-between">
+                        <!-- Mostra l'URL -->
+                        <input type="text" readonly :value=" qrCodeLink " class="mt-2 modal_input text-center">
                     </div>
-                    <div v-else-if="currentFileType === 'pdf'">
-                        <embed :src="currentFileUrl" type="application/pdf" width="100%" height="600px" />
-                    </div>
-                    <div v-else-if="currentFileType === 'spreadsheet'">
-                        <iframe :src="`https://view.officeapps.live.com/op/embed.aspx?src=${currentFileUrl}`" width="100%" height="600px"></iframe>
-                    </div>
-                    <div v-else>
-                        <p>Impossibile mostrare l'anteprima.</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <h5 class="modal-title m-auto" id="fileModalLabel">{{ currentFileName }}</h5>
-                    <button type="button" class="btn btn-secondary" @click="closeModal">Close</button>
                 </div>
             </div>
         </div>
-    </div>
-    <div v-if="showModal" class="modal-backdrop fade show"></div>
 
+        <div v-if="showModal" class="modal-backdrop fade show"></div>
+    </main>
 </template>
-
-<!-- *************************************************************** STYLE-ZONE ******************************************************************** -->
 
 <style lang="scss" scoped>
 @use '../assets/styles/partials/variables' as *;
 
 main {
-
     .folder-container {
         display: flex;
         flex-wrap: wrap;
@@ -405,14 +344,12 @@ main {
     .list-container {
         .list-item {
             padding: 10px;
-            border: 1px solid $secondary-color;
-            border-radius: 10px;
+            border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s;
 
             &:hover {
-                background-color: $secondary-color;
-                color: #fff;
+                opacity: 0.8;
             }
 
             i {
@@ -420,25 +357,33 @@ main {
             }
         }
     }
-}
 
-.modal_img {
-    width: 500px;
-}
-
-.file_icons div {
-    background-color: $headfoot-color;
-    height: 50px;
-    width: 50px;
-    border-radius: 50%;
-    color: $tertiary-color;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-size: 20px;
-
-    &:hover {
-        cursor: pointer;
+    .modal_img {
+        width: 500;
     }
+
+    .file_icons div {
+        background-color: $headfoot-color;
+        height: 50px;
+        width: 50px;
+        border-radius: 50%;
+        color: $tertiary-color;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 20px;
+
+        &:hover {
+            cursor: pointer;
+        }
+    }
+
+    .modal_input {
+        width: 100%;
+        height: 30px;
+        border-radius: 20px;
+        padding: 0 10px;
+        border: 1px solid $tertiary-color;
+    } 
 }
 </style>
