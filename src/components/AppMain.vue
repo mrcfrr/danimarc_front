@@ -94,7 +94,7 @@ export default {
                 if (err) {
                     console.error('Errore durante la generazione del QR code', err);
                 } else {
-                    console.log('QR Code Data URL:', url); // Log per verificare l'URL del QR code
+                    console.log('QR Code Data URL:', url);
                     this.qrCodeDataUrl = url; // Memorizza l'immagine del QR code come data URL
                     this.qrCodeLink = clientUrl; // Memorizza l'URL da visualizzare sotto il QR code
                     this.$emit('update-qr-code', url);
@@ -163,7 +163,6 @@ export default {
             }
         },
         downloadQrCode() {
-            // Funzione per scaricare l'immagine del QR code
             const link = document.createElement('a');
             link.href = this.qrCodeDataUrl;
             link.download = 'qr_code.png';
@@ -245,8 +244,8 @@ export default {
         
         <!-- Modale per i file e QR Code -->
         <div v-if="showModal" class="modal fade show" tabindex="-1" style="display: block;" aria-labelledby="fileModalLabel" aria-modal="true" role="dialog">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content text-center">
                     <div class="modal-header">
                         <h5 class="modal-title" id="fileModalLabel">{{ isQrCodeModal ? 'QR Code' : currentFileName }}</h5>
                         <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
@@ -266,6 +265,7 @@ export default {
                         </div>
                         <div v-else-if="currentFileType === 'spreadsheet'">
                             <iframe :src="currentFileUrl" width="100%" height="600px"></iframe>
+                            <h4>...Download in corso</h4>
                         </div>
                         <div v-else>
                             <p>Nessuna anteprima disponibile per questo file. Puoi scaricarlo <a :href="currentFileUrl" download>qui</a>.</p>
@@ -273,7 +273,7 @@ export default {
                     </div>
                     <div class="modal-footer d-flex justify-content-between">
                         <!-- Mostra l'URL -->
-                        <input type="text" readonly :value=" qrCodeLink " class="mt-2 modal_input text-center">
+                        <input v-if="isQrCodeModal && qrCodeDataUrl" type="text" readonly :value=" qrCodeLink " class="mt-2 modal_input text-center">
                     </div>
                 </div>
             </div>
